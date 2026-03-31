@@ -13,7 +13,7 @@ export default function DepartmentCards() {
             <h2 style={{ color: 'white', fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '16px' }}>
                 Department Breakdown
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                 {depts.map(dept => {
                     const pct = Math.min((dept.placed / dept.batch_strength) * 100, 100)
                     return (

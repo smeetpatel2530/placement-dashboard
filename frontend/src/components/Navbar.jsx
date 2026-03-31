@@ -29,7 +29,11 @@ export default function Navbar() {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <img src="/dtu-logo.png" alt="DTU Logo" style={{ height: '32px', width: '32px', objectFit: 'contain' }} />
-                    <span style={{ fontWeight: 700, color: 'white', fontSize: '14px', letterSpacing: '0.02em' }}>
+                    <span style={{
+                        fontWeight: 700, color: 'white',
+                        fontSize: '13px', letterSpacing: '0.02em',
+                        whiteSpace: 'nowrap'
+                    }}>
                         DTU M.Tech Placements 2026
                     </span>
                 </div>

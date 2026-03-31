@@ -98,7 +98,12 @@ export default function Dashboard() {
                 ))}
             </div>
             {/* Charts grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '40px' }}>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))',
+                gap: '16px',
+                marginBottom: '24px'
+            }}>
                 <CompanyChart />
                 <TimelineChart />
             </div>
