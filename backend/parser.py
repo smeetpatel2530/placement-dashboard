@@ -2,7 +2,14 @@ import pandas as pd
 import re
 from pathlib import Path
 from database import clear_and_insert, init_db
+import os
 
+EXCEL_PATH = os.environ.get("EXCEL_PATH", "data/placements.xlsx")
+
+def load_excel():
+    if not os.path.exists(EXCEL_PATH):
+        print(f"[Warning] Excel file not found at {EXCEL_PATH}. Starting with empty data.")
+        return
 # Map each sheet to a department label
 SHEET_MAP = {
     "DSC": "DSC",

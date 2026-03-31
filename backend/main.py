@@ -77,7 +77,8 @@ app = FastAPI(title="DTU M.Tech Placements API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Restrict to your frontend URL in production
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
