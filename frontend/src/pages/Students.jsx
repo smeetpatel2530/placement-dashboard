@@ -1,0 +1,152 @@
+import { useEffect, useState, useMemo } from 'react'
+import { getStudents, getDepartments } from '../services/api'
+
+function badge(text, color) {
+    return (
+        <span style={{
+            display: 'inline-block',
+            padding: '2px 8px',
+            borderRadius: '999px',
+            fontSize: '11px',
+            fontWeight: 600,
+            backgroundColor: color + '22',
+            color: color,
+            whiteSpace: 'nowrap'
+        }}>
+            {text}
+        </span>
+    )
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—'
+    const d = String(dateStr).split(' ')[0].split('T')[0]
+    if (!d || d === 'None' || d === 'nan') return '—'
+    const parts = d.split('-')
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+    return d
+}
+
+function ppoColor(t) {
+    if (!t) return '#818cf8'
+    if (t.includes('PPO')) return '#a3e635'
+    if (t.includes('FTE')) return '#22d3ee'
+    return '#818cf8'
+}
+
+export default function Students() {
+    const [students, setStudents] = useState([])
+    const [depts, setDepts] = useState([])
+    const [search, setSearch] = useState('')
+    const [deptFilter, setDeptFilter] = useState('')
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        Promise.all([getStudents(), getDepartments()])
+            .then(([sRes, dRes]) => {
+                setStudents(sRes.data)
+                setDepts(dRes.data)
+            })
+            .finally(() => setLoading(false))
+    }, [])
+
+    // useMemo instead of useEffect — filtered is derived state, not side-effect state
+    const filtered = useMemo(() => {
+        let result = [...students]
+        if (deptFilter) result = result.filter(s => s.department === deptFilter)
+        if (search) {
+            const q = search.toLowerCase()
+            result = result.filter(s =>
+                s.name?.toLowerCase().includes(q) ||
+                s.company?.toLowerCase().includes(q) ||
+                s.role?.toLowerCase().includes(q) ||
+                s.roll_no?.toLowerCase().includes(q)
+            )
+        }
+        return result
+    }, [search, deptFilter, students])
+
+    return (
+        <div>
+            <h1 style={{ color: 'white', fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>All Students</h1>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>
+                {filtered.length} of {students.length} students
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <input
+                    type="text"
+                    placeholder="Search name, company, role..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={{ flex: '1', minWidth: '200px', padding: '8px 14px', backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '14px', outline: 'none' }}
+                />
+                <select
+                    value={deptFilter}
+                    onChange={e => setDeptFilter(e.target.value)}
+                    style={{ padding: '8px 14px', backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#94a3b8', fontSize: '14px', outline: 'none', cursor: 'pointer' }}
+                >
+                    <option value="">All Departments</option>
+                    {depts.map(d => (
+                        <option key={d.department} value={d.department}>{d.department}</option>
+                    ))}
+                </select>
+                {(search || deptFilter) && (
+                    <button
+                        onClick={() => { setSearch(''); setDeptFilter('') }}
+                        style={{ padding: '8px 14px', backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#94a3b8', fontSize: '13px', cursor: 'pointer' }}
+                    >
+                        Clear
+                    </button>
+                )}
+            </div>
+
+            {loading ? (
+                <p style={{ color: '#64748b' }}>Loading...</p>
+            ) : (
+                <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                        <thead>
+                            <tr style={{ backgroundColor: '#0f172a', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                                {['#', 'Name', 'Roll No', 'Dept', 'Company', 'Role', 'Type', 'CTC', 'Date'].map(h => (
+                                    <th key={h} style={{ padding: '12px 14px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                                        {h}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((s, i) => (
+                                <tr
+                                    key={s.id ?? i}
+                                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}
+                                >
+                                    <td style={{ padding: '10px 14px', color: '#475569' }}>{i + 1}</td>
+                                    <td style={{ padding: '10px 14px', color: 'white', fontWeight: 500 }}>{s.name}</td>
+                                    <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.roll_no}</td>
+                                    <td style={{ padding: '10px 14px' }}>{badge(s.department, '#818cf8')}</td>
+                                    <td style={{ padding: '10px 14px', color: '#e2e8f0', fontWeight: 500 }}>{s.company}</td>
+                                    <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.role || '—'}</td>
+                                    <td style={{ padding: '10px 14px' }}>
+                                        {s.ppo_type ? badge(s.ppo_type, ppoColor(s.ppo_type)) : '—'}
+                                    </td>
+                                    <td style={{ padding: '10px 14px', color: '#fbbf24', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                                        {s.ctc_lpa ? `${s.ctc_lpa} LPA` : s.stipend_pm ? `₹${s.stipend_pm}/mo` : '—'}
+                                    </td>
+                                    <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                                        {formatDate(s.date)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {filtered.length === 0 && (
+                        <div style={{ padding: '40px', textAlign: 'center', color: '#475569' }}>
+                            No students match your filters.
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
