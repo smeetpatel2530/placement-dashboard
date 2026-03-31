@@ -1,6 +1,6 @@
-# DTU M.Tech Placements 2026 Dashboard
+# DTU M.Tech Placements Dashboard
 
-Real-time placement analytics dashboard for DTU M.Tech batch 2024-2026.
+Real-time placement analytics dashboard for DTU M.Tech batch 2026-2027.
 
 ## Stack
 - **Backend:** FastAPI + Python + SQLite
