@@ -47,6 +47,13 @@ export default function Analytics() {
     const [roles, setRoles] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768)
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
 
     useEffect(() => {
         Promise.all([getCTCDistribution(), getDepartments(), getRoles()])
@@ -89,23 +96,37 @@ export default function Analytics() {
     if (loading) return <p style={{ color: '#64748b', padding: '20px 0' }}>Loading analytics...</p>
     if (error) return <p style={{ color: '#f87171', padding: '20px 0' }}>{error}</p>
 
+    const twoColGrid = {
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+        gap: '16px',
+        marginBottom: '16px'
+    }
+
+    const roleLeftMargin = isMobile ? 10 : 120
+    const roleYWidth = isMobile ? 80 : 115
+
     return (
         <div>
-            <h1 style={{ color: 'white', fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>Analytics</h1>
-            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '28px' }}>Deep dive into placement data</p>
+            <h1 style={{ color: 'white', fontSize: isMobile ? '20px' : '22px', fontWeight: 700, marginBottom: '8px' }}>
+                Analytics
+            </h1>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>
+                Deep dive into placement data
+            </p>
 
             {/* Row 1 — CTC Distribution + Offer Type Pie */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+            <div style={twoColGrid}>
 
                 {/* CTC Distribution */}
                 <div style={card}>
                     <p style={sectionTitle}>CTC Distribution</p>
                     {ctcDist.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={260}>
-                            <BarChart data={ctcDist} margin={{ bottom: 8 }}>
+                        <ResponsiveContainer width="100%" height={240}>
+                            <BarChart data={ctcDist} margin={{ bottom: 8, left: 0, right: 8 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                <XAxis dataKey="range" tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                                <XAxis dataKey="range" tick={{ fill: '#64748b', fontSize: isMobile ? 9 : 10 }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} width={28} />
                                 <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                                     {ctcDist.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -124,9 +145,9 @@ export default function Analytics() {
                                 <Pie
                                     data={typePieData}
                                     cx="50%"
-                                    cy="45%"
-                                    innerRadius={65}
-                                    outerRadius={100}
+                                    cy="42%"
+                                    innerRadius={isMobile ? 50 : 65}
+                                    outerRadius={isMobile ? 80 : 100}
                                     paddingAngle={3}
                                     dataKey="value"
                                 >
@@ -146,23 +167,23 @@ export default function Analytics() {
                                         const pct = total > 0 ? ((entry.payload.value / total) * 100).toFixed(0) : 0
                                         return `${value} — ${entry.payload.value} (${pct}%)`
                                     }}
-                                    wrapperStyle={{ fontSize: '12px', color: '#94a3b8', paddingTop: '12px' }}
+                                    wrapperStyle={{ fontSize: isMobile ? '11px' : '12px', color: '#94a3b8', paddingTop: '12px' }}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
-                    ) : <EmptyChart message="No offer type data. Check ppo_type column in Excel." />}
+                    ) : <EmptyChart message="No offer type data." />}
                 </div>
             </div>
 
             {/* Row 2 — Dept Median CTC */}
-            <div style={{ ...card, marginBottom: '24px' }}>
+            <div style={{ ...card, marginBottom: '16px' }}>
                 <p style={sectionTitle}>Median CTC by Department (LPA)</p>
                 {deptCTCData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={deptCTCData} margin={{ bottom: 8 }}>
+                        <BarChart data={deptCTCData} margin={{ bottom: 8, left: 0, right: 8 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                            <XAxis dataKey="dept" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} unit=" L" />
+                            <XAxis dataKey="dept" tick={{ fill: '#94a3b8', fontSize: isMobile ? 10 : 12 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} unit="L" width={32} />
                             <Tooltip
                                 {...tooltipStyle}
                                 formatter={(v) => [`${v} LPA`, 'Median CTC']}
@@ -180,10 +201,17 @@ export default function Analytics() {
             <div style={card}>
                 <p style={sectionTitle}>Top Job Roles</p>
                 {topRoles.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={260}>
-                        <BarChart data={topRoles} layout="vertical" margin={{ left: 120, right: 16 }}>
+                    <ResponsiveContainer width="100%" height={isMobile ? 300 : 260}>
+                        <BarChart data={topRoles} layout="vertical" margin={{ left: roleLeftMargin, right: 16, top: 4, bottom: 4 }}>
                             <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                            <YAxis type="category" dataKey="role" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} width={115} />
+                            <YAxis
+                                type="category"
+                                dataKey="role"
+                                tick={{ fill: '#94a3b8', fontSize: isMobile ? 9 : 11 }}
+                                axisLine={false}
+                                tickLine={false}
+                                width={roleYWidth}
+                            />
                             <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                             <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                                 {topRoles.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}

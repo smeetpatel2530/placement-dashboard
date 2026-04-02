@@ -49,6 +49,13 @@ export default function Dashboard() {
     const [stats, setStats] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 640)
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [])
 
     useEffect(() => {
         getStats()
@@ -67,48 +74,72 @@ export default function Dashboard() {
 
     return (
         <div>
-            <h1 style={{ color: 'white', fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>
+            <h1 style={{
+                color: 'white',
+                fontSize: isMobile ? '18px' : '22px',
+                fontWeight: 700,
+                marginBottom: '6px'
+            }}>
                 Placement Overview — M.Tech 2026
             </h1>
-            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '28px' }}>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: isMobile ? '16px' : '28px' }}>
                 Real-time data from placements.xlsx
             </p>
 
+            {/* ── Stat Cards ── */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '16px',
-                marginBottom: '40px',
+                gridTemplateColumns: isMobile
+                    ? 'repeat(2, 1fr)'
+                    : 'repeat(auto-fill, minmax(180px, 1fr))',
+                gap: isMobile ? '10px' : '16px',
+                marginBottom: isMobile ? '20px' : '36px',
             }}>
-
                 {statCards.map(card => (
                     <div key={card.key} style={{
                         backgroundColor: '#0f172a',
                         border: '1px solid rgba(255,255,255,0.07)',
                         borderRadius: '12px',
-                        padding: '20px',
+                        padding: isMobile ? '14px' : '20px',
                     }}>
-                        <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                        <div style={{
+                            fontSize: isMobile ? '10px' : '12px',
+                            color: '#64748b',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            marginBottom: '6px'
+                        }}>
                             {card.label}
                         </div>
-                        <div style={{ fontSize: '28px', fontWeight: 700, color: card.color, fontVariantNumeric: 'tabular-nums' }}>
-                            {stats ? <AnimatedNumber value={stats[card.key]} suffix={card.suffix} /> : '—'}
+                        <div style={{
+                            fontSize: isMobile ? '20px' : '28px',
+                            fontWeight: 700,
+                            color: card.color,
+                            fontVariantNumeric: 'tabular-nums'
+                        }}>
+                            {stats
+                                ? <AnimatedNumber value={stats[card.key]} suffix={card.suffix} />
+                                : '—'
+                            }
                         </div>
                     </div>
                 ))}
             </div>
-            {/* Charts grid */}
+
+            {/* ── Charts Grid ── */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 380px), 1fr))',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
                 gap: '16px',
-                marginBottom: '24px'
+                marginBottom: '20px'
             }}>
                 <CompanyChart />
                 <TimelineChart />
             </div>
-            {/* Department breakdown */}
+
+            {/* ── Department Breakdown ── */}
             <DepartmentCards />
+
             <MotivationalQuote />
         </div>
     )
