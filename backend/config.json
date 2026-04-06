@@ -1,12 +1,15 @@
 {
     "batch_strength": {
+        "CSE": 28,
+        "AFI": 33,
+        "CYS": 29,
         "DSC": 30,
         "SWE": 25,
-        "CSE": 30,
         "ITY": 25,
-        "AFI": 30,
-        "Research": 15
+        "RCO": 12,
+        "RIT": 9,
+        "RSE": 15
     },
     "excel_filename": "data/placements.xlsx",
-    "upload_password": "dtu2026admin"
+    "upload_password": "dtu2027admin"
 }

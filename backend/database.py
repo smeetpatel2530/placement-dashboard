@@ -21,10 +21,12 @@ def init_db():
             company     TEXT,
             role        TEXT,
             ppo_type    TEXT,
+            ppo_type_raw TEXT, 
             ppo_confirmed TEXT,
             ctc_lpa     REAL,
             stipend_pm  REAL,
-            date        TEXT
+            date        TEXT,
+            batch_year   INTEGER DEFAULT 2027
         )
     """)
     conn.commit()

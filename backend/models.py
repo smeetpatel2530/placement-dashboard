@@ -6,14 +6,16 @@ class Student(BaseModel):
     name: str
     roll_no: Optional[str]
     department: str
-    company: str
+    company: Optional[str]
     role: Optional[str]
-    ppo_type: Optional[str]
+    ppo_type: Optional[str]       
+    ppo_type_raw: Optional[str]   
     ppo_confirmed: Optional[str]
     ctc_lpa: Optional[float]
-    stipend_pm: Optional[float]
+    stipend_pm: Optional[float]   
     date: Optional[str]
-
+    batch_year: Optional[int]
+ 
 class DeptStat(BaseModel):
     department: str
     placed: int
@@ -25,6 +27,7 @@ class DeptStat(BaseModel):
     fte_count: Optional[int] = None
     ppo_count: Optional[int] = None
     intern_count: Optional[int] = None
+    fte_intern_count: int 
 
 class CompanyStat(BaseModel):
     company: str
@@ -51,3 +54,4 @@ class OverallStats(BaseModel):
     ppo_count: int
     intern_count: int
     departments: Optional[List] = None
+    fte_intern_count: int 
