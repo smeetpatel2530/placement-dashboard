@@ -92,7 +92,7 @@ async def store_loop():
 
 # ── REST Endpoints ────────────────────────────────────────────────────────────
 
-@app.get("/api/stats", response_model=OverallStats)
+@app.get("/api/stats")
 def overall_stats():
     return get_overall_stats()
 
