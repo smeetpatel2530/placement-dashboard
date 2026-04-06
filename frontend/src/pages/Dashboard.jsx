@@ -80,7 +80,7 @@ export default function Dashboard() {
                 fontWeight: 700,
                 marginBottom: '6px'
             }}>
-                Placement Overview — M.Tech 2026
+                Placement Overview — M.Tech 2027
             </h1>
             <p style={{ color: '#64748b', fontSize: '14px', marginBottom: isMobile ? '16px' : '28px' }}>
                 Real-time data from placements.xlsx

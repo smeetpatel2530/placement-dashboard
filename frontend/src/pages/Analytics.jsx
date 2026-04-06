@@ -78,13 +78,16 @@ export default function Analytics() {
     )
 
     const typePieData = useMemo(() => {
-        const fte = depts.reduce((sum, d) => sum + (d.fte_count || 0), 0)
-        const ppo = depts.reduce((sum, d) => sum + (d.ppo_count || 0), 0)
-        const intern = depts.reduce((sum, d) => sum + (d.intern_count || 0), 0)
+        const fte = depts.reduce((s, d) => s + (d.fte_count || 0), 0)
+        const ppo = depts.reduce((s, d) => s + (d.ppo_count || 0), 0)
+        const intern = depts.reduce((s, d) => s + (d.intern_count || 0), 0)
+        const fteIntern = depts.reduce((s, d) => s + (d.fte_intern_count || 0), 0)
+
         const data = []
-        if (fte > 0) data.push({ name: 'FTE', value: fte })
-        if (ppo > 0) data.push({ name: 'PPO→FTE', value: ppo })
+        if (fte > 0) data.push({ name: 'FTE (Direct)', value: fte })
+        if (ppo > 0) data.push({ name: 'PPO → FTE', value: ppo })
         if (intern > 0) data.push({ name: 'Intern Only', value: intern })
+        if (fteIntern > 0) data.push({ name: 'Intern → FTE', value: fteIntern })
         return data
     }, [depts])
 
