@@ -50,8 +50,7 @@ class OverallStats(BaseModel):
     max_ctc: float
     min_ctc: float
     avg_ctc: float
-    fte_count: int
-    ppo_count: int
-    intern_count: int
-    departments: Optional[List] = None
-    fte_intern_count: int 
+    avg_stipend: float           
+    fte_count: int               
+    ppo_count: int               
+    intern_count: int            
