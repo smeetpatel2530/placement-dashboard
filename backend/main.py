@@ -10,7 +10,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, F
 from fastapi.middleware.cors import CORSMiddleware
 
 # ← FIXED: match exact class names from your models.py
-from models import OverallStats, DeptStats, CompanyStat, TimelineStat, CTCBucket, Student
+from models import OverallStats, DeptStats, CompanyStats, TimelineStat, CtcBucket, Student,RoleStat,PpoInternBreakdown,BatchYearStats
 
 from parser import parse_excel
 from analytics import (
