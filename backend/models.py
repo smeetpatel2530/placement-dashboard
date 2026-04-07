@@ -53,17 +53,20 @@ class RoleStat(BaseModel):
     count: int
 
 
-class StudentRecord(BaseModel):
+class Student(BaseModel):
     id: int
-    name: str
+    name: Optional[str]
     roll_no: Optional[str]
     department: Optional[str]
     company: Optional[str]
     role: Optional[str]
-    ctc_lpa: Optional[float]
-    stipend: Optional[float]
     ppo_type: Optional[str]
+    ppo_type_raw: Optional[str]
+    ppo_confirmed: Optional[str]
+    ctc_lpa: Optional[float]      
+    stipend_pm: Optional[float]
     date: Optional[str]
+    batch_year: Optional[int]
 
 
 class PpoInternBreakdown(BaseModel):
