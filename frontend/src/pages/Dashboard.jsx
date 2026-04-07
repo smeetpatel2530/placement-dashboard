@@ -13,6 +13,7 @@ const statCards = [
     { key: 'avg_ctc', label: 'Average CTC', suffix: ' LPA', color: '#34d399' },
     { key: 'fte_count', label: 'FTE Offers', suffix: '', color: '#f472b6' },
     { key: 'ppo_count', label: 'PPO Offers', suffix: '', color: '#fb923c' },
+    { key: 'intern_count', label: 'Interns', suffix: '', color: '#60a5fa' },
     { key: 'total_batch', label: 'Total Batch', suffix: '', color: '#94a3b8' },
 ]
 
@@ -20,8 +21,8 @@ function AnimatedNumber({ value, suffix }) {
     const [display, setDisplay] = useState(0)
 
     useEffect(() => {
-        if (!value) return
         const target = parseFloat(value)
+        if (!value || isNaN(target)) return
         const duration = 1200
         const steps = 40
         const increment = target / steps
@@ -91,7 +92,7 @@ export default function Dashboard() {
                 display: 'grid',
                 gridTemplateColumns: isMobile
                     ? 'repeat(2, 1fr)'
-                    : 'repeat(auto-fill, minmax(180px, 1fr))',
+                    : 'repeat(auto-fill, minmax(160px, 1fr))',
                 gap: isMobile ? '10px' : '16px',
                 marginBottom: isMobile ? '20px' : '36px',
             }}>
@@ -103,7 +104,7 @@ export default function Dashboard() {
                         padding: isMobile ? '14px' : '20px',
                     }}>
                         <div style={{
-                            fontSize: isMobile ? '10px' : '12px',
+                            fontSize: isMobile ? '10px' : '11px',
                             color: '#64748b',
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
@@ -112,13 +113,13 @@ export default function Dashboard() {
                             {card.label}
                         </div>
                         <div style={{
-                            fontSize: isMobile ? '20px' : '28px',
+                            fontSize: isMobile ? '20px' : '26px',
                             fontWeight: 700,
                             color: card.color,
                             fontVariantNumeric: 'tabular-nums'
                         }}>
                             {stats
-                                ? <AnimatedNumber value={stats[card.key]} suffix={card.suffix} />
+                                ? <AnimatedNumber value={stats[card.key] ?? 0} suffix={card.suffix} />
                                 : '—'
                             }
                         </div>

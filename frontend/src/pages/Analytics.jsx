@@ -35,7 +35,10 @@ const tooltipStyle = {
 
 function EmptyChart({ message = 'No data available' }) {
     return (
-        <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: '13px' }}>
+        <div style={{
+            height: 220, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: '#475569', fontSize: '13px'
+        }}>
             {message}
         </div>
     )
@@ -58,9 +61,9 @@ export default function Analytics() {
     useEffect(() => {
         Promise.all([getCTCDistribution(), getDepartments(), getRoles()])
             .then(([cRes, dRes, rRes]) => {
-                setCtcDist(cRes.data || [])
-                setDepts(dRes.data || [])
-                setRoles(rRes.data || [])
+                setCtcDist(Array.isArray(cRes.data) ? cRes.data : [])
+                setDepts(Array.isArray(dRes.data) ? dRes.data : [])
+                setRoles(Array.isArray(rRes.data) ? rRes.data : [])
             })
             .catch(err => {
                 console.error('Analytics load error:', err)
@@ -77,23 +80,36 @@ export default function Analytics() {
         [depts]
     )
 
+    // ── Fixed: uses fte_count / ppo_count / intern_count (no more fte_intern_count) ──
     const typePieData = useMemo(() => {
         const fte = depts.reduce((s, d) => s + (d.fte_count || 0), 0)
         const ppo = depts.reduce((s, d) => s + (d.ppo_count || 0), 0)
         const intern = depts.reduce((s, d) => s + (d.intern_count || 0), 0)
-        const fteIntern = depts.reduce((s, d) => s + (d.fte_intern_count || 0), 0)
 
         const data = []
         if (fte > 0) data.push({ name: 'FTE (Direct)', value: fte })
-        if (ppo > 0) data.push({ name: 'PPO → FTE', value: ppo })
+        if (ppo > 0) data.push({ name: 'PPO / Converted', value: ppo })
         if (intern > 0) data.push({ name: 'Intern Only', value: intern })
-        if (fteIntern > 0) data.push({ name: 'Intern → FTE', value: fteIntern })
         return data
     }, [depts])
 
     const topRoles = useMemo(() =>
         [...roles].sort((a, b) => b.count - a.count).slice(0, 10),
         [roles]
+    )
+
+    // Dept placement % bar data
+    const deptPlacementData = useMemo(() =>
+        depts
+            .filter(d => d.batch_strength > 0)
+            .sort((a, b) => b.percentage - a.percentage)
+            .map(d => ({
+                dept: d.department,
+                placed: d.placed,
+                total: d.batch_strength,
+                pct: d.percentage
+            })),
+        [depts]
     )
 
     if (loading) return <p style={{ color: '#64748b', padding: '20px 0' }}>Loading analytics...</p>
@@ -129,7 +145,7 @@ export default function Analytics() {
                             <BarChart data={ctcDist} margin={{ bottom: 8, left: 0, right: 8 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                                 <XAxis dataKey="range" tick={{ fill: '#64748b', fontSize: isMobile ? 9 : 10 }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} width={28} />
+                                <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
                                 <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
                                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                                     {ctcDist.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -154,7 +170,7 @@ export default function Analytics() {
                                     paddingAngle={3}
                                     dataKey="value"
                                 >
-                                    {typePieData.map((entry, i) => (
+                                    {typePieData.map((_, i) => (
                                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                                     ))}
                                 </Pie>
@@ -178,7 +194,32 @@ export default function Analytics() {
                 </div>
             </div>
 
-            {/* Row 2 — Dept Median CTC */}
+            {/* Row 2 — Dept Placement % */}
+            <div style={{ ...card, marginBottom: '16px' }}>
+                <p style={sectionTitle}>Placement % by Department</p>
+                {deptPlacementData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={220}>
+                        <BarChart data={deptPlacementData} margin={{ bottom: 8, left: 0, right: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                            <XAxis dataKey="dept" tick={{ fill: '#94a3b8', fontSize: isMobile ? 10 : 12 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" width={36} domain={[0, 100]} />
+                            <Tooltip
+                                {...tooltipStyle}
+                                formatter={(v, _, props) => [
+                                    `${v}% (${props.payload.placed}/${props.payload.total})`,
+                                    'Placed'
+                                ]}
+                                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                            />
+                            <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
+                                {deptPlacementData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                ) : <EmptyChart message="No department data." />}
+            </div>
+
+            {/* Row 3 — Dept Median CTC */}
             <div style={{ ...card, marginBottom: '16px' }}>
                 <p style={sectionTitle}>Median CTC by Department (LPA)</p>
                 {deptCTCData.length > 0 ? (
@@ -200,13 +241,13 @@ export default function Analytics() {
                 ) : <EmptyChart message="No CTC data per department." />}
             </div>
 
-            {/* Row 3 — Top Roles */}
+            {/* Row 4 — Top Roles */}
             <div style={card}>
                 <p style={sectionTitle}>Top Job Roles</p>
                 {topRoles.length > 0 ? (
                     <ResponsiveContainer width="100%" height={isMobile ? 300 : 260}>
                         <BarChart data={topRoles} layout="vertical" margin={{ left: roleLeftMargin, right: 16, top: 4, bottom: 4 }}>
-                            <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                            <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                             <YAxis
                                 type="category"
                                 dataKey="role"
