@@ -10,7 +10,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, F
 from fastapi.middleware.cors import CORSMiddleware
 
 # ← FIXED: match exact class names from your models.py
-from models import OverallStats, DeptStats, CompanyStatss, TimelineStat, CtcBucket, Student,RoleStat,PpoInternBreakdown,BatchYearStats
+from models import OverallStats, DeptStats, CompanyStats, TimelineStat, CtcBucket, Student, RoleStat, PpoInternBreakdown, BatchYearStats
 
 from parser import parse_excel
 from analytics import (
@@ -118,7 +118,7 @@ def dept_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/companies", response_model=List[CompanyStatss])
+@app.get("/api/companies", response_model=List[CompanyStats])
 def company_stats():
     try:
         return get_company_stats()
