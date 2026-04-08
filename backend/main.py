@@ -19,7 +19,7 @@ from analytics import (
     get_timeline_stats, get_ctc_distribution,
     get_role_stats          # ← FIXED: was get_role_breakdown (doesn't exist)
 )
-from database import init_db, fetch_all_students, fetch_students_filtered, get_connection
+from database import init_db, fetch_all_students, fetch_students_filtered, get_db
 from watcher import start_watcher
 
 
@@ -253,7 +253,7 @@ async def upload_excel(file: UploadFile, password: str = Form(...)):
 @app.get("/api/health")
 def health():
     try:
-        conn = get_connection()
+        conn = get_db()
         count = conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
         conn.close()
         return {
@@ -268,7 +268,7 @@ def health():
 @app.get("/api/debug")
 def debug():
     try:
-        conn = get_connection()
+        conn = get_db()
         count = conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
         sample = conn.execute("SELECT * FROM students LIMIT 3").fetchall()
         cols = [r[1] for r in conn.execute("PRAGMA table_info(students)").fetchall()]
