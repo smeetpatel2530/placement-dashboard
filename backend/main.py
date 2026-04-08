@@ -5,6 +5,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import List, Optional
+from tempfile import NamedTemporaryFile
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -180,64 +181,73 @@ def students(
 #     records = parse_excel(EXCEL_PATH)
 #     await manager.broadcast('{"event":"DATA_UPDATED"}')
 #     return {"message": f"Uploaded successfully. {len(records)} students loaded."}
+
+
 from tempfile import NamedTemporaryFile
+import os
+from fastapi import Form
 
 @app.post("/api/upload")
 async def upload_excel(file: UploadFile, password: str = Form(...)):
     if password != "dtu2027admin":
         raise HTTPException(status_code=403, detail="Invalid password")
     
-    # Save uploaded file temporarily
     with NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
         contents = await file.read()
         tmp.write(contents)
         tmp_path = tmp.name
     
     try:
-        # Parse the Excel file
         students = parse_excel(tmp_path)
+        print(f"[Upload] Parsed {len(students)} students from Excel")
         
         if not students:
-            raise HTTPException(status_code=400, detail="No valid students found in file")
+            return {"message": "No valid students found"}
         
-        # 🔴 CRITICAL: INSERT DATA INTO DATABASE
         conn = get_db()
-        try:
-            # Clear old data first
-            conn.execute("DELETE FROM students")
-            
-            # Insert each student
-            for s in students:
-                conn.execute('''
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM students")
+        print("[Upload] Cleared old student data")
+        
+        inserted = 0
+        for s in students:
+            try:
+                cursor.execute("""
                     INSERT INTO students 
                     (name, roll_no, department, company, role, ctc_lpa, ppo_type, date, batch_year)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    s['name'], 
-                    s['roll_no'], 
-                    s['department'], 
-                    s['company'], 
+                """, (
+                    s['name'],
+                    s['roll_no'],
+                    s['department'],
+                    s['company'],
                     s['role'],
                     s.get('ctc'),
-                    s.get('ppo_type'), 
-                    s.get('date'), 
-                    2027
+                    s.get('ppo_type'),
+                    s.get('date'),
+                    s.get('batch_year', 2027)
                 ))
-            
-            conn.commit()
-            print(f"✅ Successfully inserted {len(students)} students into database")
-            
-        except Exception as db_error:
-            conn.rollback()
-            print(f"❌ Database error: {db_error}")
-            raise HTTPException(status_code=500, detail=f"Database insert failed: {str(db_error)}")
-        finally:
-            conn.close()
+                inserted += 1
+            except Exception as e:
+                print(f"[Upload] Error inserting {s['name']}: {e}")
         
-        return {"message": f"Uploaded successfully. {len(students)} students loaded."}
+        conn.commit()
+        
+        count = cursor.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+        print(f"[Upload] ✅ Inserted {inserted}/{len(students)} students. DB has {count} total")
+        
+        conn.close()
+        
+        return {"message": f"Uploaded successfully. {inserted} students loaded."}
+    
+    except Exception as e:
+        print(f"[Upload] ❌ Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     
     finally:
-        os.unlink(tmp_path)
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 @app.get("/api/health")
