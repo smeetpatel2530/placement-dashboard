@@ -119,13 +119,13 @@
 #     conn.close()
 #     return [dict(r) for r in rows]
 
-
 import sqlite3
 import os
 
 DB_PATH = 'placements.db'
 
 def init_db():
+    """Initialize database schema"""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     
@@ -148,8 +148,35 @@ def init_db():
     conn.close()
 
 def get_db():
+    """Get database connection"""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
+def fetch_all_students():
+    """Fetch all students from database"""
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM students").fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def fetch_students_filtered(department=None, company=None):
+    """Fetch students with optional filters"""
+    conn = get_db()
+    query = "SELECT * FROM students WHERE 1=1"
+    params = []
+    
+    if department:
+        query += " AND department = ?"
+        params.append(department)
+    
+    if company:
+        query += " AND company = ?"
+        params.append(company)
+    
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+# Initialize database on import
 init_db()
