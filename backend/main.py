@@ -163,23 +163,81 @@ def students(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# @app.post("/api/upload")
+# async def upload_excel(
+#     file: UploadFile = File(...),
+#     password: str = Form(...),
+# ):
+#     if password != UPLOAD_PASSWORD:
+#         raise HTTPException(status_code=401, detail="Invalid password")
+#     if not file.filename.endswith((".xlsx", ".xls")):
+#         raise HTTPException(status_code=400, detail="Only .xlsx / .xls files allowed")
+
+#     Path("data").mkdir(exist_ok=True)
+#     with open(EXCEL_PATH, "wb") as f:
+#         shutil.copyfileobj(file.file, f)
+
+#     records = parse_excel(EXCEL_PATH)
+#     await manager.broadcast('{"event":"DATA_UPDATED"}')
+#     return {"message": f"Uploaded successfully. {len(records)} students loaded."}
+from tempfile import NamedTemporaryFile
+
 @app.post("/api/upload")
-async def upload_excel(
-    file: UploadFile = File(...),
-    password: str = Form(...),
-):
-    if password != UPLOAD_PASSWORD:
-        raise HTTPException(status_code=401, detail="Invalid password")
-    if not file.filename.endswith((".xlsx", ".xls")):
-        raise HTTPException(status_code=400, detail="Only .xlsx / .xls files allowed")
-
-    Path("data").mkdir(exist_ok=True)
-    with open(EXCEL_PATH, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    records = parse_excel(EXCEL_PATH)
-    await manager.broadcast('{"event":"DATA_UPDATED"}')
-    return {"message": f"Uploaded successfully. {len(records)} students loaded."}
+async def upload_excel(file: UploadFile, password: str = Form(...)):
+    if password != "dtu2027admin":
+        raise HTTPException(status_code=403, detail="Invalid password")
+    
+    # Save uploaded file temporarily
+    with NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+        contents = await file.read()
+        tmp.write(contents)
+        tmp_path = tmp.name
+    
+    try:
+        # Parse the Excel file
+        students = parse_excel(tmp_path)
+        
+        if not students:
+            raise HTTPException(status_code=400, detail="No valid students found in file")
+        
+        # 🔴 CRITICAL: INSERT DATA INTO DATABASE
+        conn = get_db()
+        try:
+            # Clear old data first
+            conn.execute("DELETE FROM students")
+            
+            # Insert each student
+            for s in students:
+                conn.execute('''
+                    INSERT INTO students 
+                    (name, roll_no, department, company, role, ctc_lpa, ppo_type, date, batch_year)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    s['name'], 
+                    s['roll_no'], 
+                    s['department'], 
+                    s['company'], 
+                    s['role'],
+                    s.get('ctc'),
+                    s.get('ppo_type'), 
+                    s.get('date'), 
+                    2027
+                ))
+            
+            conn.commit()
+            print(f"✅ Successfully inserted {len(students)} students into database")
+            
+        except Exception as db_error:
+            conn.rollback()
+            print(f"❌ Database error: {db_error}")
+            raise HTTPException(status_code=500, detail=f"Database insert failed: {str(db_error)}")
+        finally:
+            conn.close()
+        
+        return {"message": f"Uploaded successfully. {len(students)} students loaded."}
+    
+    finally:
+        os.unlink(tmp_path)
 
 
 @app.get("/api/health")
