@@ -8,7 +8,7 @@ from typing import List, Optional
 from tempfile import NamedTemporaryFile
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+
 
 # ← FIXED: match exact class names from your models.py
 from models import OverallStats, DeptStats, CompanyStats, TimelineStat, CtcBucket, Student, RoleStat, PpoInternBreakdown, BatchYearStats
@@ -30,6 +30,18 @@ with open("config.json") as f:
 EXCEL_PATH      = CONFIG["excel_filename"]
 UPLOAD_PASSWORD = CONFIG["upload_password"]
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://placement-dashboard-seven.vercel.app", "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ── WebSocket Manager ─────────────────────────────────────────────────────────
 class ConnectionManager:
@@ -91,15 +103,15 @@ async def lifespan(app: FastAPI):
 
 
 # ── App ───────────────────────────────────────────────────────────────────────
-app = FastAPI(title="DTU M.Tech Placements API", lifespan=lifespan)
+# app = FastAPI(title="DTU M.Tech Placements API", lifespan=lifespan)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 
 # ── REST Endpoints ────────────────────────────────────────────────────────────
