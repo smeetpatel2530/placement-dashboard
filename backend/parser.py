@@ -247,13 +247,25 @@ def parse_excel(filepath: str) -> list[dict]:
 
             raw_type_val = str(row.get('ppo_intern', '')).strip()
 
+            # Parse Stipend
+            stipend = None
+            stipend_raw = row.get('stipend')
+            if stipend_raw is not None and str(stipend_raw).strip() not in ['-', 'nan', '', 'None']:
+                try:
+                    # Clean the string if it contains "k" or ","
+                    clean_stipend = str(stipend_raw).lower().replace('k', '000').replace(',', '').strip()
+                    stipend = float(''.join(filter(lambda x: x.isdigit() or x == '.', clean_stipend)))
+                except (ValueError, TypeError):
+                    stipend = None
+
             all_students.append({
                 'name': name,
                 'roll_no': str(row.get('roll_no', '')).strip(),
                 'department': dept,
-                'company': str(row.get('company', '')).strip() if str(row.get('company')) != 'nan' else '',
-                'role': str(row.get('role', '')).strip() if str(row.get('role')) != 'nan' else '',
+                'company': str(row.get('company', '')).strip() if pd.notna(row.get('company')) else '',
+                'role': str(row.get('role', '')).strip() if pd.notna(row.get('role')) else '',
                 'ctc': ctc,
+                'stipend_pm': stipend, # <--- ENSURE THIS IS INCLUDED
                 'ppo_type': classify_offer_type(raw_type_val),
                 'ppo_type_raw': raw_type_val if raw_type_val.lower() not in ['nan', 'none', '-'] else 'FTE',
                 'date': date_str,

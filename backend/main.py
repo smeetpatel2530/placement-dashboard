@@ -215,8 +215,9 @@ async def upload_excel(file: UploadFile, password: str = Form(...)):
                     s['company'],
                     s['role'],
                     s.get('ctc'),
+                    s.get('stipend_pm'),
                     s.get('ppo_type'),
-                    s.get('ppo_type_raw'),  # THIS IS THE KEY ADDITION
+                    s.get('ppo_type_raw'), 
                     s.get('date'),
                     s.get('batch_year', 2027)
                 ))
