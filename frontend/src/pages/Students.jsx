@@ -415,7 +415,7 @@ export default function Students() {
                                         {s.ctc_lpa
                                             ? `${s.ctc_lpa} LPA`
                                             : s.stipend_pm
-                                                ? `₹${Number(s.stipend_pm).toLocaleString('en-IN')} /mo`
+                                                ? `₹${s.stipend_pm >= 1000 ? (s.stipend_pm / 1000) + 'K' : s.stipend_pm} /mo`
                                                 : '—'
                                         }
                                     </td>
