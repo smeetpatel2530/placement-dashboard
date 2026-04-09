@@ -163,14 +163,13 @@ def find_header_row(df):
             return i
     return None
 
-# ... (keep your imports and BATCH_STRENGTH as they are)
+# ... (imports and BATCH_STRENGTH remain the same)
 
 def parse_excel(filepath: str) -> list[dict]:
     all_students = []
     try:
         xl = pd.ExcelFile(filepath)
     except Exception as e:
-        print(f"[Parser] Error: {e}")
         return []
 
     for sheet_name in xl.sheet_names:
@@ -191,55 +190,49 @@ def parse_excel(filepath: str) -> list[dict]:
                 elif 'ROLL' in c or 'ENROLL' in c: col_map[c] = 'roll_no'
                 elif 'COMPANY' in c or 'ORGANISATION' in c: col_map[c] = 'company'
                 elif 'ROLE' in c or 'DESIGNATION' in c: col_map[c] = 'role'
-                elif 'PPO' in c or 'INTERN' in c: col_map[c] = 'ppo_intern_col'
+                # Look for the specific PPO / INTERN column
+                elif 'PPO' in c or 'INTERN' in c: col_map[c] = 'ppo_raw_col'
                 elif 'CTC' in c or 'PACKAGE' in c: col_map[c] = 'ctc_col'
                 elif 'STIPEND' in c: col_map[c] = 'stipend_col'
                 elif 'DATE' in c: col_map[c] = 'date_col'
 
             df = df.rename(columns=col_map)
-            if 'name' not in df.columns: continue
             
-            # Use to_dict('records') to avoid the "Series/Dtype" bug
-            for record in df.to_dict('records'):
-                name = str(record.get('name', '')).strip()
-                if not name or name.lower() in ['nan', 'none', 'total', 'name']: continue
+            for _, row in df.iterrows():
+                name = str(row.get('name', '')).strip()
+                if not name or name.lower() in ['nan', 'total', 'name']: continue
 
-                # CLEAN CTC
+                # Raw Data Extraction
+                raw_ppo_val = str(row.get('ppo_raw_col', '')).strip()
+                if raw_ppo_val.lower() in ['nan', 'none', '-', '']:
+                    raw_ppo_val = 'FTE'
+
+                # CTC & Stipend Parsing
                 ctc = None
-                raw_ctc = record.get('ctc_col')
-                if pd.notna(raw_ctc):
-                    try: ctc = float(str(raw_ctc).replace(',', '').strip())
+                if pd.notna(row.get('ctc_col')):
+                    try: ctc = float(str(row.get('ctc_col')).replace(',', '').strip())
                     except: ctc = None
 
-                # CLEAN STIPEND
                 stipend = None
-                raw_stipend = record.get('stipend_col')
-                if pd.notna(raw_stipend):
+                if pd.notna(row.get('stipend_col')):
                     try:
-                        s_str = str(raw_stipend).lower().replace(',', '').replace('k', '000').strip()
-                        # Extract only digits
-                        stipend = float(''.join(filter(lambda x: x.isdigit() or x == '.', s_str)))
+                        s_val = str(row.get('stipend_col')).lower().replace(',', '').replace('k', '000').strip()
+                        stipend = float(''.join(filter(lambda x: x.isdigit() or x == '.', s_val)))
                     except: stipend = None
-
-                # CLEAN PPO TYPE (The fix for that long messy string)
-                raw_ppo = str(record.get('ppo_intern_col', '')).strip()
-                if raw_ppo.lower() in ['nan', 'none', '-', '']:
-                    raw_ppo = 'FTE'
 
                 all_students.append({
                     'name': name,
-                    'roll_no': str(record.get('roll_no', '')).strip() if pd.notna(record.get('roll_no')) else '',
+                    'roll_no': str(row.get('roll_no', '')).strip(),
                     'department': dept,
-                    'company': str(record.get('company', '')).strip() if pd.notna(record.get('company')) else '',
-                    'role': str(record.get('role', '')).strip() if pd.notna(record.get('role')) else '',
+                    'company': str(row.get('company', '')).strip() if pd.notna(row.get('company')) else '',
+                    'role': str(row.get('role', '')).strip() if pd.notna(row.get('role')) else '',
                     'ctc': ctc,
                     'stipend_pm': stipend,
-                    'ppo_type': classify_offer_type(raw_ppo),
-                    'ppo_type_raw': raw_ppo,
-                    'date': str(record.get('date_col', '')) if pd.notna(record.get('date_col')) else None,
+                    'ppo_type': classify_offer_type(raw_ppo_val), # Used for filtering logic
+                    'ppo_type_raw': raw_ppo_val,                 # Used for display
+                    'date': str(row.get('date_col', '')) if pd.notna(row.get('date_col')) else None,
                     'batch_year': 2027
                 })
         except Exception as e:
             print(f"Error: {e}")
-
     return all_students
