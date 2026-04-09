@@ -183,7 +183,6 @@ def students(
 #     records = parse_excel(EXCEL_PATH)
 #     await manager.broadcast('{"event":"DATA_UPDATED"}')
 #     return {"message": f"Uploaded successfully. {len(records)} students loaded."}
-
 @app.post("/api/upload")
 async def upload_excel(file: UploadFile, password: str = Form(...)):
     if password != "dtu2027admin":
@@ -196,39 +195,33 @@ async def upload_excel(file: UploadFile, password: str = Form(...)):
     
     try:
         students = parse_excel(tmp_path)
+        if not students:
+            return {"message": "Uploaded successfully. 0 students loaded. Check sheet names and headers."}
+            
         conn = get_db()
         cursor = conn.cursor()
-        
         cursor.execute("DELETE FROM students")
         
         inserted = 0
         for s in students:
             try:
+                # 11 values for 11 columns
                 cursor.execute("""
                     INSERT INTO students 
-                    (name, roll_no, department, company, role, ctc_lpa, ppo_type, ppo_type_raw, date, batch_year)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (name, roll_no, department, company, role, ctc_lpa, stipend_pm, ppo_type, ppo_type_raw, date, batch_year)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    s['name'],
-                    s['roll_no'],
-                    s['department'],
-                    s['company'],
-                    s['role'],
-                    s.get('ctc'),
-                    s.get('stipend_pm'),
-                    s.get('ppo_type'),
-                    s.get('ppo_type_raw'), 
-                    s.get('date'),
-                    s.get('batch_year', 2027)
+                    s['name'], s['roll_no'], s['department'], s['company'], s['role'],
+                    s.get('ctc'), s.get('stipend_pm'), s.get('ppo_type'), 
+                    s.get('ppo_type_raw'), s.get('date'), s.get('batch_year', 2027)
                 ))
                 inserted += 1
             except Exception as e:
-                print(f"[Upload] Error: {e}")
+                print(f"[DB Error] {e}")
         
         conn.commit()
         conn.close()
         return {"message": f"Uploaded successfully. {inserted} students loaded."}
-    
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
