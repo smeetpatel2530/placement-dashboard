@@ -102,18 +102,6 @@ async def lifespan(app: FastAPI):
     observer.stop()
 
 
-# ── App ───────────────────────────────────────────────────────────────────────
-# app = FastAPI(title="DTU M.Tech Placements API", lifespan=lifespan)
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-
 # ── REST Endpoints ────────────────────────────────────────────────────────────
 @app.get("/api/stats")
 def overall_stats():
@@ -169,9 +157,11 @@ def students(
     company: Optional[str] = None,
     min_ctc: Optional[float] = None,
     max_ctc: Optional[float] = None,
+    type: Optional[str] = None, # Add this
 ):
     try:
-        return fetch_students_filtered(department, company, min_ctc, max_ctc)
+        # Pass the 'type' to your database function
+        return fetch_students_filtered(department, company, min_ctc, max_ctc, type)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
