@@ -184,11 +184,6 @@ def students(
 #     await manager.broadcast('{"event":"DATA_UPDATED"}')
 #     return {"message": f"Uploaded successfully. {len(records)} students loaded."}
 
-
-from tempfile import NamedTemporaryFile
-import os
-from fastapi import Form
-
 @app.post("/api/upload")
 async def upload_excel(file: UploadFile, password: str = Form(...)):
     if password != "dtu2027admin":
@@ -201,24 +196,18 @@ async def upload_excel(file: UploadFile, password: str = Form(...)):
     
     try:
         students = parse_excel(tmp_path)
-        print(f"[Upload] Parsed {len(students)} students from Excel")
-        
-        if not students:
-            return {"message": "No valid students found"}
-        
         conn = get_db()
         cursor = conn.cursor()
         
         cursor.execute("DELETE FROM students")
-        print("[Upload] Cleared old student data")
         
         inserted = 0
         for s in students:
             try:
                 cursor.execute("""
                     INSERT INTO students 
-                    (name, roll_no, department, company, role, ctc_lpa, ppo_type, date, batch_year)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (name, roll_no, department, company, role, ctc_lpa, ppo_type, ppo_type_raw, date, batch_year)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     s['name'],
                     s['roll_no'],
@@ -227,25 +216,17 @@ async def upload_excel(file: UploadFile, password: str = Form(...)):
                     s['role'],
                     s.get('ctc'),
                     s.get('ppo_type'),
+                    s.get('ppo_type_raw'),  # THIS IS THE KEY ADDITION
                     s.get('date'),
                     s.get('batch_year', 2027)
                 ))
                 inserted += 1
             except Exception as e:
-                print(f"[Upload] Error inserting {s['name']}: {e}")
+                print(f"[Upload] Error: {e}")
         
         conn.commit()
-        
-        count = cursor.execute("SELECT COUNT(*) FROM students").fetchone()[0]
-        print(f"[Upload] ✅ Inserted {inserted}/{len(students)} students. DB has {count} total")
-        
         conn.close()
-        
         return {"message": f"Uploaded successfully. {inserted} students loaded."}
-    
-    except Exception as e:
-        print(f"[Upload] ❌ Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
     
     finally:
         if os.path.exists(tmp_path):
