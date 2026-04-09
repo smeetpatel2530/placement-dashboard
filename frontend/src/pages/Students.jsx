@@ -298,29 +298,36 @@ export default function Students() {
             .finally(() => setLoading(false))
     }, [])
 
+    // ... (keep badge and formatDate functions)
+
     const filtered = useMemo(() => {
         let result = [...students]
         if (deptFilter) result = result.filter(s => s.department === deptFilter)
+
         if (typeFilter) {
             result = result.filter(s => {
-                const val = (s.ppo_type || '').toUpperCase()
-                if (typeFilter === 'FTE') return val === 'FTE' || val === ''
-                if (typeFilter === 'PPO') return val.includes('PPO')
-                if (typeFilter === 'Intern') return val.includes('INTERN') && !val.includes('PPO')
+                // We use the simplified 'ppo_type' (PPO, Intern, FTE) for the filter dropdown
+                // while keeping the display as raw data.
+                const type = (s.ppo_type || 'FTE').toUpperCase()
+                if (typeFilter === 'FTE') return type === 'FTE'
+                if (typeFilter === 'PPO') return type === 'PPO'
+                if (typeFilter === 'Intern') return type === 'INTERN'
                 return true
             })
         }
+
         if (search) {
             const q = search.toLowerCase()
             result = result.filter(s =>
                 s.name?.toLowerCase().includes(q) ||
                 s.company?.toLowerCase().includes(q) ||
-                s.role?.toLowerCase().includes(q) ||
-                s.roll_no?.toLowerCase().includes(q)
+                s.role?.toLowerCase().includes(q)
             )
         }
         return result
     }, [search, deptFilter, typeFilter, students])
+
+
 
     const inputStyle = {
         padding: '8px 14px',
@@ -402,7 +409,7 @@ export default function Students() {
                                     <td style={{ padding: '10px 14px', color: '#e2e8f0', fontWeight: 500, whiteSpace: 'nowrap' }}>{s.company || '—'}</td>
                                     <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.role || '—'}</td>
                                     <td style={{ padding: '10px 14px' }}>
-                                        {/* Priority: Use raw Excel value, fallback to ppo_type */}
+                                        {/* Always show the raw data from the Excel cell */}
                                         {badge(s.ppo_type_raw || s.ppo_type || 'FTE', ppoColor(s.ppo_type_raw || s.ppo_type))}
                                     </td>
                                     <td style={{
