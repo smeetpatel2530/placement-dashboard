@@ -406,10 +406,18 @@ export default function Students() {
                                         {badge(s.ppo_type_raw || s.ppo_type || 'FTE', ppoColor(s.ppo_type_raw || s.ppo_type))}
                                     </td>
                                     <td style={{
-                                        padding: '10px 14px', color: s.ctc_lpa ? '#fbbf24' : '#94a3b8',
-                                        fontVariantNumeric: 'tabular-nums', fontWeight: 600, whiteSpace: 'nowrap'
+                                        padding: '10px 14px',
+                                        color: s.ctc_lpa ? '#fbbf24' : (s.stipend_pm ? '#22d3ee' : '#94a3b8'),
+                                        fontVariantNumeric: 'tabular-nums',
+                                        fontWeight: 600,
+                                        whiteSpace: 'nowrap'
                                     }}>
-                                        {s.ctc_lpa ? `${s.ctc_lpa} LPA` : (s.stipend_pm ? `₹${s.stipend_pm}/mo` : '—')}
+                                        {s.ctc_lpa
+                                            ? `${s.ctc_lpa} LPA`
+                                            : s.stipend_pm
+                                                ? `₹${Number(s.stipend_pm).toLocaleString('en-IN')} /mo`
+                                                : '—'
+                                        }
                                     </td>
                                     <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
                                 </tr>
