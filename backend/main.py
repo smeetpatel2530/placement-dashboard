@@ -1,3 +1,276 @@
+# import json
+# import os
+# import shutil
+# import asyncio
+# from contextlib import asynccontextmanager
+# from pathlib import Path
+# from typing import List, Optional
+# from tempfile import NamedTemporaryFile
+
+# from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
+
+
+# # ← FIXED: match exact class names from your models.py
+# from models import OverallStats, DeptStats, CompanyStats, TimelineStat, CtcBucket, Student, RoleStat, PpoInternBreakdown, BatchYearStats
+
+# from parser import parse_excel
+# from analytics import (
+#     get_overall_stats, get_dept_stats, get_company_stats,
+#     get_timeline_stats, get_ctc_distribution,
+#     get_role_stats          # ← FIXED: was get_role_breakdown (doesn't exist)
+# )
+# from database import init_db, fetch_all_students, fetch_students_filtered, get_db
+# from watcher import start_watcher
+
+
+# # ── Config ────────────────────────────────────────────────────────────────────
+# with open("config.json") as f:
+#     CONFIG = json.load(f)
+
+# EXCEL_PATH      = CONFIG["excel_filename"]
+# UPLOAD_PASSWORD = CONFIG["upload_password"]
+
+# from fastapi.middleware.cors import CORSMiddleware
+
+# app = FastAPI()
+
+# # Add CORS middleware
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["https://placement-dashboard-seven.vercel.app", "http://localhost:3000"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+# # ── WebSocket Manager ─────────────────────────────────────────────────────────
+# class ConnectionManager:
+#     def __init__(self):
+#         self.active: list[WebSocket] = []
+
+#     async def connect(self, ws: WebSocket):
+#         await ws.accept()
+#         self.active.append(ws)
+
+#     def disconnect(self, ws: WebSocket):
+#         if ws in self.active:
+#             self.active.remove(ws)
+
+#     async def broadcast(self, message: str):
+#         dead = []
+#         for ws in self.active:
+#             try:
+#                 await ws.send_text(message)
+#             except Exception:
+#                 dead.append(ws)
+#         for ws in dead:
+#             self.active.remove(ws)
+
+
+# manager = ConnectionManager()
+
+
+# # ── Lifespan: startup / shutdown ──────────────────────────────────────────────
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     # 1. Init / migrate DB
+#     init_db()
+#     Path("data").mkdir(exist_ok=True)
+
+#     # 2. Parse Excel on startup
+#     if Path(EXCEL_PATH).exists():
+#         records = parse_excel(EXCEL_PATH)
+#         print(f"[Startup] Loaded {len(records)} students")
+#     else:
+#         print(f"[Startup] WARNING: Excel not found at '{EXCEL_PATH}'")
+
+#     # 3. Store event loop for thread-safe WS broadcast
+#     app.state.loop = asyncio.get_event_loop()
+
+#     # 4. File watcher
+#     def on_excel_change():
+#         parse_excel(EXCEL_PATH)
+#         asyncio.run_coroutine_threadsafe(
+#             manager.broadcast('{"event":"DATA_UPDATED"}'),
+#             app.state.loop
+#         )
+
+#     observer = start_watcher(EXCEL_PATH, on_excel_change)
+
+#     yield  # ← app runs here
+
+#     observer.stop()
+
+
+# # ── REST Endpoints ────────────────────────────────────────────────────────────
+# @app.get("/api/stats")
+# def overall_stats():
+#     try:
+#         return get_overall_stats()
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @app.get("/api/departments", response_model=List[DeptStats])  # ← FIXED: DeptStats
+# def dept_stats():
+#     try:
+#         return get_dept_stats()
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @app.get("/api/companies", response_model=List[CompanyStats])
+# def company_stats():
+#     try:
+#         return get_company_stats()
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @app.get("/api/timeline", response_model=List[TimelineStat])
+# def timeline():
+#     try:
+#         return get_timeline_stats()
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @app.get("/api/ctc-distribution", response_model=List[CtcBucket])
+# def ctc_dist():
+#     try:
+#         return get_ctc_distribution()
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @app.get("/api/roles")
+# def get_roles():
+#     try:
+#         return get_role_stats()
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @app.get("/api/students", response_model=List[Student])
+# def students(
+#     department: Optional[str] = None,
+#     company: Optional[str] = None,
+#     min_ctc: Optional[float] = None,
+#     max_ctc: Optional[float] = None,
+#     type: Optional[str] = None, # Add this
+# ):
+#     try:
+#         # Pass the 'type' to your database function
+#         return fetch_students_filtered(department, company, min_ctc, max_ctc, type)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# # @app.post("/api/upload")
+# # async def upload_excel(
+# #     file: UploadFile = File(...),
+# #     password: str = Form(...),
+# # ):
+# #     if password != UPLOAD_PASSWORD:
+# #         raise HTTPException(status_code=401, detail="Invalid password")
+# #     if not file.filename.endswith((".xlsx", ".xls")):
+# #         raise HTTPException(status_code=400, detail="Only .xlsx / .xls files allowed")
+
+# #     Path("data").mkdir(exist_ok=True)
+# #     with open(EXCEL_PATH, "wb") as f:
+# #         shutil.copyfileobj(file.file, f)
+
+# #     records = parse_excel(EXCEL_PATH)
+# #     await manager.broadcast('{"event":"DATA_UPDATED"}')
+# #     return {"message": f"Uploaded successfully. {len(records)} students loaded."}
+# @app.post("/api/upload")
+# async def upload_excel(file: UploadFile, password: str = Form(...)):
+#     if password != "dtu2027admin":
+#         raise HTTPException(status_code=403, detail="Invalid password")
+    
+#     with NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+#         contents = await file.read()
+#         tmp.write(contents)
+#         tmp_path = tmp.name
+    
+#     try:
+#         students = parse_excel(tmp_path)
+#         if not students:
+#             return {"message": "Uploaded successfully. 0 students loaded. Check sheet names and headers."}
+            
+#         conn = get_db()
+#         cursor = conn.cursor()
+#         cursor.execute("DELETE FROM students")
+        
+#         inserted = 0
+#         for s in students:
+#             try:
+#                 # 11 values for 11 columns
+#                 cursor.execute("""
+#                     INSERT INTO students 
+#                     (name, roll_no, department, company, role, ctc_lpa, stipend_pm, ppo_type, ppo_type_raw, date, batch_year)
+#                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+#                 """, (
+#                     s['name'], s['roll_no'], s['department'], s['company'], s['role'],
+#                     s.get('ctc'), s.get('stipend_pm'), s.get('ppo_type'), 
+#                     s.get('ppo_type_raw'), s.get('date'), s.get('batch_year', 2027)
+#                 ))
+#                 inserted += 1
+#             except Exception as e:
+#                 print(f"[DB Error] {e}")
+        
+#         conn.commit()
+#         conn.close()
+#         return {"message": f"Uploaded successfully. {inserted} students loaded."}
+#     finally:
+#         if os.path.exists(tmp_path):
+#             os.unlink(tmp_path)
+
+
+# @app.get("/api/health")
+# def health():
+#     try:
+#         conn = get_db()
+#         count = conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+#         conn.close()
+#         return {
+#             "status": "ok",
+#             "excel_exists": Path(EXCEL_PATH).exists(),
+#             "students_in_db": count,
+#         }
+#     except Exception as e:
+#         return {"status": "error", "detail": str(e)}
+
+
+# @app.get("/api/debug")
+# def debug():
+#     try:
+#         conn = get_db()
+#         count = conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+#         sample = conn.execute("SELECT * FROM students LIMIT 3").fetchall()
+#         cols = [r[1] for r in conn.execute("PRAGMA table_info(students)").fetchall()]
+#         conn.close()
+#         return {
+#             "total_students": count,
+#             "columns": cols,
+#             "sample": [dict(r) for r in sample],
+#         }
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# # ── WebSocket ──────────────────────────────────────────────────────────────────
+# @app.websocket("/ws")
+# async def websocket_endpoint(ws: WebSocket):
+#     await manager.connect(ws)
+#     try:
+#         while True:
+#             await ws.receive_text()
+#     except WebSocketDisconnect:
+#         manager.disconnect(ws)
+
+
+
 import json
 import os
 import shutil
@@ -8,42 +281,61 @@ from typing import List, Optional
 from tempfile import NamedTemporaryFile
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
-
-# ← FIXED: match exact class names from your models.py
-from models import OverallStats, DeptStats, CompanyStats, TimelineStat, CtcBucket, Student, RoleStat, PpoInternBreakdown, BatchYearStats
+from models import (
+    OverallStats,
+    DeptStats,
+    CompanyStats,
+    TimelineStat,
+    CtcBucket,
+    Student,
+    RoleStat,
+    PpoInternBreakdown,
+    BatchYearStats,
+)
 
 from parser import parse_excel
 from analytics import (
-    get_overall_stats, get_dept_stats, get_company_stats,
-    get_timeline_stats, get_ctc_distribution,
-    get_role_stats          # ← FIXED: was get_role_breakdown (doesn't exist)
+    get_overall_stats,
+    get_dept_stats,
+    get_company_stats,
+    get_timeline_stats,
+    get_ctc_distribution,
+    get_role_stats,
 )
-from database import init_db, fetch_all_students, fetch_students_filtered, get_db
+from database import (
+    init_db,
+    fetch_all_students,
+    fetch_students_filtered,
+    fetch_distinct_types,
+    get_db,
+)
 from watcher import start_watcher
 
 
-# ── Config ────────────────────────────────────────────────────────────────────
 with open("config.json") as f:
     CONFIG = json.load(f)
 
-EXCEL_PATH      = CONFIG["excel_filename"]
+EXCEL_PATH = CONFIG["excel_filename"]
 UPLOAD_PASSWORD = CONFIG["upload_password"]
 
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Add CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://placement-dashboard-seven.vercel.app", "http://localhost:3000"],
+    allow_origins=[
+        "https://placement-dashboard-seven.vercel.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ── WebSocket Manager ─────────────────────────────────────────────────────────
+
 class ConnectionManager:
     def __init__(self):
         self.active: list[WebSocket] = []
@@ -70,24 +362,19 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-# ── Lifespan: startup / shutdown ──────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Init / migrate DB
     init_db()
     Path("data").mkdir(exist_ok=True)
 
-    # 2. Parse Excel on startup
     if Path(EXCEL_PATH).exists():
         records = parse_excel(EXCEL_PATH)
         print(f"[Startup] Loaded {len(records)} students")
     else:
         print(f"[Startup] WARNING: Excel not found at '{EXCEL_PATH}'")
 
-    # 3. Store event loop for thread-safe WS broadcast
     app.state.loop = asyncio.get_event_loop()
 
-    # 4. File watcher
     def on_excel_change():
         parse_excel(EXCEL_PATH)
         asyncio.run_coroutine_threadsafe(
@@ -96,13 +383,25 @@ async def lifespan(app: FastAPI):
         )
 
     observer = start_watcher(EXCEL_PATH, on_excel_change)
-
-    yield  # ← app runs here
-
+    yield
     observer.stop()
 
 
-# ── REST Endpoints ────────────────────────────────────────────────────────────
+app = FastAPI(lifespan=lifespan)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://placement-dashboard-seven.vercel.app",
+        "http://localhost:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 @app.get("/api/stats")
 def overall_stats():
     try:
@@ -111,7 +410,7 @@ def overall_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/departments", response_model=List[DeptStats])  # ← FIXED: DeptStats
+@app.get("/api/departments", response_model=List[DeptStats])
 def dept_stats():
     try:
         return get_dept_stats()
@@ -151,77 +450,106 @@ def get_roles():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/students", response_model=List[Student])
-def students(
-    department: Optional[str] = None,
-    company: Optional[str] = None,
-    min_ctc: Optional[float] = None,
-    max_ctc: Optional[float] = None,
-    type: Optional[str] = None, # Add this
-):
+@app.get("/api/types")
+def get_types():
     try:
-        # Pass the 'type' to your database function
-        return fetch_students_filtered(department, company, min_ctc, max_ctc, type)
+        return fetch_distinct_types()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# @app.post("/api/upload")
-# async def upload_excel(
-#     file: UploadFile = File(...),
-#     password: str = Form(...),
-# ):
-#     if password != UPLOAD_PASSWORD:
-#         raise HTTPException(status_code=401, detail="Invalid password")
-#     if not file.filename.endswith((".xlsx", ".xls")):
-#         raise HTTPException(status_code=400, detail="Only .xlsx / .xls files allowed")
+@app.get("/api/students", response_model=List[Student])
+def students(
+    department: Optional[str] = None,
+    search: Optional[str] = None,
+    min_ctc: Optional[float] = None,
+    max_ctc: Optional[float] = None,
+    type: Optional[str] = None,
+):
+    try:
+        if any([department, search, min_ctc is not None, max_ctc is not None, type]):
+            return fetch_students_filtered(
+                department=department,
+                search=search,
+                min_ctc=min_ctc,
+                max_ctc=max_ctc,
+                type_filter=type,
+            )
+        return fetch_all_students()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-#     Path("data").mkdir(exist_ok=True)
-#     with open(EXCEL_PATH, "wb") as f:
-#         shutil.copyfileobj(file.file, f)
 
-#     records = parse_excel(EXCEL_PATH)
-#     await manager.broadcast('{"event":"DATA_UPDATED"}')
-#     return {"message": f"Uploaded successfully. {len(records)} students loaded."}
 @app.post("/api/upload")
-async def upload_excel(file: UploadFile, password: str = Form(...)):
-    if password != "dtu2027admin":
+async def upload_excel(
+    file: UploadFile = File(...),
+    password: str = Form(...)
+):
+    if password != UPLOAD_PASSWORD:
         raise HTTPException(status_code=403, detail="Invalid password")
-    
-    with NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+
+    if not file.filename.endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Only .xlsx / .xls files allowed")
+
+    with NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
         contents = await file.read()
         tmp.write(contents)
         tmp_path = tmp.name
-    
+
     try:
         students = parse_excel(tmp_path)
+
         if not students:
             return {"message": "Uploaded successfully. 0 students loaded. Check sheet names and headers."}
-            
+
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM students")
-        
+
         inserted = 0
         for s in students:
             try:
-                # 11 values for 11 columns
                 cursor.execute("""
-                    INSERT INTO students 
-                    (name, roll_no, department, company, role, ctc_lpa, stipend_pm, ppo_type, ppo_type_raw, date, batch_year)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO students
+                    (
+                        name,
+                        roll_no,
+                        department,
+                        company,
+                        role,
+                        ctc_lpa,
+                        ppo_type,
+                        ppo_type_raw,
+                        ppo_confirmed,
+                        stipend_pm,
+                        date,
+                        batch_year
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    s['name'], s['roll_no'], s['department'], s['company'], s['role'],
-                    s.get('ctc'), s.get('stipend_pm'), s.get('ppo_type'), 
-                    s.get('ppo_type_raw'), s.get('date'), s.get('batch_year', 2027)
+                    s.get("name"),
+                    s.get("roll_no"),
+                    s.get("department"),
+                    s.get("company"),
+                    s.get("role"),
+                    s.get("ctc"),
+                    s.get("ppo_type"),
+                    s.get("ppo_type_raw"),
+                    s.get("ppo_confirmed"),
+                    s.get("stipend_pm"),
+                    s.get("date"),
+                    s.get("batch_year", 2027),
                 ))
                 inserted += 1
             except Exception as e:
                 print(f"[DB Error] {e}")
-        
+
         conn.commit()
         conn.close()
+
+        await manager.broadcast('{"event":"DATA_UPDATED"}')
         return {"message": f"Uploaded successfully. {inserted} students loaded."}
+
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
@@ -259,7 +587,6 @@ def debug():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── WebSocket ──────────────────────────────────────────────────────────────────
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await manager.connect(ws)
