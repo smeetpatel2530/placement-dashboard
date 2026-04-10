@@ -59,8 +59,7 @@ def get_overall_stats() -> dict:
     total_batch = sum(BATCH_STRENGTH.values())
 
     ctc_list = [s["ctc_lpa"] for s in students if s.get("ctc_lpa") and s["ctc_lpa"] > 0]
-    stipend_list = [s.get("stipend") for s in students
-                    if s.get("stipend") and s["stipend"] > 0]
+    stipend_list = [s.get("stipend_pm") for s in students if s.get("stipend_pm") and s["stipend_pm"] > 0]
 
     fte_count = 0
     ppo_count = 0
@@ -118,8 +117,7 @@ def get_dept_stats() -> list:
                 intern_count += 1
 
         ctc_list = [s["ctc_lpa"] for s in group if s.get("ctc_lpa") and s["ctc_lpa"] > 0]
-        stipend_list = [s.get("stipend") for s in group
-                        if s.get("stipend") and s["stipend"] > 0]
+        stipend_list = [s.get("stipend_pm") for s in group if s.get("stipend_pm") and s["stipend_pm"] > 0]
 
         result.append({
             "department": dept,
@@ -149,10 +147,11 @@ def get_company_stats() -> list:
     result = []
     for company, group in sorted(company_map.items(), key=lambda x: -len(x[1])):
         ctc_list = [s["ctc_lpa"] for s in group if s.get("ctc_lpa") and s["ctc_lpa"] > 0]
-        stipend_list = [s.get("stipend") for s in group
-                        if s.get("stipend") and s["stipend"] > 0]
-        # Dept breakdown for tooltip
+        stipend_list = [s.get("stipend_pm") for s in group          # ← also fix: stipend_pm not stipend
+                        if s.get("stipend_pm") and s["stipend_pm"] > 0]
         depts = Counter(s.get("department", "") for s in group)
+        roles = list({(s.get("role") or "").strip() for s in group  # ← ADD THIS
+                      if s.get("role") and s["role"].strip()})
 
         result.append({
             "company": company,
@@ -160,6 +159,7 @@ def get_company_stats() -> list:
             "avg_ctc": _avg(ctc_list),
             "avg_stipend": _avg(stipend_list),
             "departments": dict(depts),
+            "roles": roles,                                          # ← ADD THIS
         })
 
     return result[:15]
