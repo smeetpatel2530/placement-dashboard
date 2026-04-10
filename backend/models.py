@@ -6,16 +6,16 @@ from typing import Optional
 
 class OverallStats(BaseModel):
     total_placed: int
-    total_batch: int          # total batch strength across all depts
+    total_batch: int          
     placement_percentage: float
     median_ctc: float
     max_ctc: float
     min_ctc: float
     avg_ctc: float
     avg_stipend: float
-    fte_count: int            # placed via direct FTE (no internship)
-    ppo_count: int            # intern who got PPO (confirmed or pending)
-    intern_count: int         # intern only (no PPO yet / 2M short-term)
+    fte_count: int            
+    ppo_count: int            
+    intern_count: int         
 
 
 # ─── Department-wise Stats ───────────────────────────────────────────────────
@@ -23,7 +23,7 @@ class OverallStats(BaseModel):
 class DeptStats(BaseModel):
     department: str
     placed: int
-    batch_strength: int       # total students in that dept
+    batch_strength: int      
     percentage: float
     median_ctc: float
     max_ctc: Optional[float]
@@ -41,21 +41,21 @@ class CompanyStats(BaseModel):
     count: int
     avg_ctc: float
     avg_stipend: float
-    departments: dict[str, int]   # e.g. {"CSE": 3, "DSC": 1}
-    roles: list[str]              # distinct roles offered by this company
+    departments: dict[str, int]   
+    roles: list[str]              
 
 
 # ─── Timeline ────────────────────────────────────────────────────────────────
 
 class TimelineStat(BaseModel):
-    month: str      # e.g. "Oct 2025"
+    month: str     
     count: int
 
 
 # ─── CTC Distribution Bucket ─────────────────────────────────────────────────
 
 class CtcBucket(BaseModel):
-    range: str      # e.g. "10–15 LPA"
+    range: str      
     count: int
 
 
@@ -69,7 +69,7 @@ class RoleStat(BaseModel):
 # ─── PPO / Intern Breakdown ───────────────────────────────────────────────────
 
 class PpoInternBreakdown(BaseModel):
-    type: str       # raw value e.g. "11M Intern+PPO", "2M Intern", "FTE"
+    type: str      
     count: int
 
 
@@ -82,9 +82,9 @@ class Student(BaseModel):
     department: Optional[str]     = None
     company: Optional[str]        = None
     role: Optional[str]           = None
-    ppo_type: Optional[str]       = None   # classified: "FTE" | "PPO" | "Intern"
-    ppo_type_raw: Optional[str]   = None   # raw Excel value: "11M Intern+PPO" etc.
-    ppo_confirmed: Optional[str]  = None   # "PPO Confirmation Status" column
+    ppo_type: Optional[str]       = None   
+    ppo_type_raw: Optional[str]   = None   
+    ppo_confirmed: Optional[str]  = None   
     ctc_lpa: Optional[float]      = None
     stipend_pm: Optional[float]   = None
     date: Optional[str]           = None

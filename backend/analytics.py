@@ -159,7 +159,7 @@ def get_company_stats() -> list:
             "avg_ctc": _avg(ctc_list),
             "avg_stipend": _avg(stipend_list),
             "departments": dict(depts),
-            "roles": roles,                                          # ← ADD THIS
+            "roles": roles,                                         
         })
 
     return result[:15]
