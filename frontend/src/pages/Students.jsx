@@ -318,6 +318,21 @@ export default function Students() {
             )
         }
 
+        // ── Sort: LPA students first (highest to lowest), then stipend students (highest to lowest)
+        result.sort((a, b) => {
+            const aHasCtc = a.ctc_lpa != null && a.ctc_lpa !== ''
+            const bHasCtc = b.ctc_lpa != null && b.ctc_lpa !== ''
+
+            if (aHasCtc && bHasCtc) return Number(b.ctc_lpa) - Number(a.ctc_lpa)  // both LPA → higher first
+            if (aHasCtc && !bHasCtc) return -1  // a has LPA, b doesn't → a comes first
+            if (!aHasCtc && bHasCtc) return 1   // b has LPA, a doesn't → b comes first
+
+            // Both have only stipend → sort by stipend descending
+            const aStipend = a.stipend_pm != null && a.stipend_pm !== '' ? Number(a.stipend_pm) : -1
+            const bStipend = b.stipend_pm != null && b.stipend_pm !== '' ? Number(b.stipend_pm) : -1
+            return bStipend - aStipend
+        })
+
         return result
     }, [search, deptFilter, typeFilter, students])
 
