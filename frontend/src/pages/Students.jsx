@@ -1,3 +1,6 @@
+
+
+
 // import { useEffect, useState, useMemo } from 'react'
 // import { getStudents, getDepartments } from '../services/api'
 
@@ -6,12 +9,14 @@
 //         <span style={{
 //             display: 'inline-block',
 //             padding: '2px 8px',
-//             borderRadius: '999px',
-//             fontSize: '11px',
-//             fontWeight: 600,
-//             backgroundColor: color + '22',
+//             borderRadius: '4px',
+//             fontSize: '10px',
+//             fontWeight: 700,
+//             backgroundColor: color + '15',
+//             border: `1px solid ${color}44`,
 //             color: color,
-//             whiteSpace: 'nowrap'
+//             whiteSpace: 'nowrap',
+//             textTransform: 'uppercase'
 //         }}>
 //             {text}
 //         </span>
@@ -30,16 +35,10 @@
 // function ppoColor(t) {
 //     if (!t) return '#818cf8'
 //     const val = t.toUpperCase()
-//     if (val.includes('PPO') && val.includes('INTERN')) return '#a3e635'
-//     if (val.includes('PPO')) return '#a3e635'
-//     if (val.includes('INTERN')) return '#fb923c'
-//     if (val.includes('FTE')) return '#22d3ee'
-//     return '#818cf8'
-// }
-
-// function ppoLabel(t) {
-//     if (!t || t === '-' || t.toLowerCase() === 'nan') return null
-//     return t
+//     if (val.includes('PPO')) return '#a3e635' // Lime for PPO
+//     if (val.includes('INTERN')) return '#fb923c' // Orange for Intern
+//     if (val.includes('FTE')) return '#22d3ee' // Cyan for FTE
+//     return '#94a3b8'
 // }
 
 // export default function Students() {
@@ -70,29 +69,36 @@
 //             .finally(() => setLoading(false))
 //     }, [])
 
+//     // ... (keep badge and formatDate functions)
+
 //     const filtered = useMemo(() => {
 //         let result = [...students]
 //         if (deptFilter) result = result.filter(s => s.department === deptFilter)
+
 //         if (typeFilter) {
 //             result = result.filter(s => {
-//                 const val = (s.ppo_type || '').toUpperCase()
-//                 if (typeFilter === 'FTE') return val === 'FTE' || val === ''
-//                 if (typeFilter === 'PPO') return val.includes('PPO')
-//                 if (typeFilter === 'Intern') return val.includes('INTERN') && !val.includes('PPO')
+//                 // We use the simplified 'ppo_type' (PPO, Intern, FTE) for the filter dropdown
+//                 // while keeping the display as raw data.
+//                 const type = (s.ppo_type || 'FTE').toUpperCase()
+//                 if (typeFilter === 'FTE') return type === 'FTE'
+//                 if (typeFilter === 'PPO') return type === 'PPO'
+//                 if (typeFilter === 'Intern') return type === 'INTERN'
 //                 return true
 //             })
 //         }
+
 //         if (search) {
 //             const q = search.toLowerCase()
 //             result = result.filter(s =>
 //                 s.name?.toLowerCase().includes(q) ||
 //                 s.company?.toLowerCase().includes(q) ||
-//                 s.role?.toLowerCase().includes(q) ||
-//                 s.roll_no?.toLowerCase().includes(q)
+//                 s.role?.toLowerCase().includes(q)
 //             )
 //         }
 //         return result
 //     }, [search, deptFilter, typeFilter, students])
+
+
 
 //     const inputStyle = {
 //         padding: '8px 14px',
@@ -113,7 +119,6 @@
 //                 {filtered.length} of {students.length} students
 //             </p>
 
-//             {/* ── Filters ── */}
 //             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
 //                 <input
 //                     type="text"
@@ -142,17 +147,8 @@
 //                     <option value="PPO">PPO</option>
 //                     <option value="Intern">Intern</option>
 //                 </select>
-//                 {(search || deptFilter || typeFilter) && (
-//                     <button
-//                         onClick={() => { setSearch(''); setDeptFilter(''); setTypeFilter('') }}
-//                         style={{ ...inputStyle, backgroundColor: 'rgba(255,255,255,0.08)', color: '#94a3b8', cursor: 'pointer' }}
-//                     >
-//                         Clear
-//                     </button>
-//                 )}
 //             </div>
 
-//             {/* ── Table ── */}
 //             {loading ? (
 //                 <p style={{ color: '#64748b' }}>Loading...</p>
 //             ) : (
@@ -173,62 +169,44 @@
 //                         </thead>
 //                         <tbody>
 //                             {filtered.map((s, i) => (
-//                                 <tr
-//                                     key={s.id ?? i}
-//                                     style={{
-//                                         borderBottom: '1px solid rgba(255,255,255,0.05)',
-//                                         backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'
-//                                     }}
-//                                 >
+//                                 <tr key={s.id ?? i} style={{
+//                                     borderBottom: '1px solid rgba(255,255,255,0.05)',
+//                                     backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'
+//                                 }}>
 //                                     <td style={{ padding: '10px 14px', color: '#475569' }}>{i + 1}</td>
-//                                     <td style={{ padding: '10px 14px', color: 'white', fontWeight: 500, whiteSpace: 'nowrap' }}>
-//                                         {s.name}
-//                                     </td>
+//                                     <td style={{ padding: '10px 14px', color: 'white', fontWeight: 500, whiteSpace: 'nowrap' }}>{s.name}</td>
 //                                     <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.roll_no || '—'}</td>
 //                                     <td style={{ padding: '10px 14px' }}>{badge(s.department, '#818cf8')}</td>
-//                                     <td style={{ padding: '10px 14px', color: '#e2e8f0', fontWeight: 500, whiteSpace: 'nowrap' }}>
-//                                         {s.company || '—'}
-//                                     </td>
+//                                     <td style={{ padding: '10px 14px', color: '#e2e8f0', fontWeight: 500, whiteSpace: 'nowrap' }}>{s.company || '—'}</td>
 //                                     <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.role || '—'}</td>
 //                                     <td style={{ padding: '10px 14px' }}>
-//                                         {ppoLabel(s.ppo_type)
-//                                             ? badge(ppoLabel(s.ppo_type), ppoColor(s.ppo_type))
-//                                             : '—'
-//                                         }
+//                                         {/* Always show the raw data from the Excel cell */}
+//                                         {badge(s.ppo_type_raw || s.ppo_type || 'FTE', ppoColor(s.ppo_type_raw || s.ppo_type))}
 //                                     </td>
 //                                     <td style={{
 //                                         padding: '10px 14px',
-//                                         color: s.ctc_lpa ? '#fbbf24' : '#94a3b8',
+//                                         color: s.ctc_lpa ? '#fbbf24' : (s.stipend_pm ? '#22d3ee' : '#94a3b8'),
 //                                         fontVariantNumeric: 'tabular-nums',
 //                                         fontWeight: 600,
 //                                         whiteSpace: 'nowrap'
 //                                     }}>
 //                                         {s.ctc_lpa
 //                                             ? `${s.ctc_lpa} LPA`
-//                                             : s.stipend
-//                                                 ? `₹${s.stipend}/mo`
+//                                             : s.stipend_pm
+//                                                 ? `₹${Number(s.stipend_pm).toLocaleString('en-IN')}K /mo`
 //                                                 : '—'
 //                                         }
 //                                     </td>
-//                                     <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>
-//                                         {formatDate(s.date)}
-//                                     </td>
+//                                     <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
 //                                 </tr>
 //                             ))}
 //                         </tbody>
 //                     </table>
-//                     {filtered.length === 0 && (
-//                         <div style={{ padding: '40px', textAlign: 'center', color: '#475569' }}>
-//                             No students match your filters.
-//                         </div>
-//                     )}
 //                 </div>
 //             )}
 //         </div>
 //     )
 // }
-
-
 
 import { useEffect, useState, useMemo } from 'react'
 import { getStudents, getDepartments } from '../services/api'
@@ -247,7 +225,7 @@ function badge(text, color) {
             whiteSpace: 'nowrap',
             textTransform: 'uppercase'
         }}>
-            {text}
+            {text || '—'}
         </span>
     )
 }
@@ -261,18 +239,25 @@ function formatDate(dateStr) {
     return d
 }
 
-function ppoColor(t) {
-    if (!t) return '#818cf8'
-    const val = t.toUpperCase()
-    if (val.includes('PPO')) return '#a3e635' // Lime for PPO
-    if (val.includes('INTERN')) return '#fb923c' // Orange for Intern
-    if (val.includes('FTE')) return '#22d3ee' // Cyan for FTE
-    return '#94a3b8'
+function typeColor(raw) {
+    const t = String(raw || '').toUpperCase()
+    if (!t) return '#94a3b8'
+    if (t.includes('INTERN')) return '#fb923c'
+    if (t.includes('PPO')) return '#a3e635'
+    if (t.includes('FTE')) return '#22d3ee'
+    if (t.includes('GTE')) return '#60a5fa'
+    return '#c084fc'
+}
+
+function normalizeType(value) {
+    if (value == null) return ''
+    return String(value).trim()
 }
 
 export default function Students() {
     const [students, setStudents] = useState([])
     const [depts, setDepts] = useState([])
+    const [types, setTypes] = useState([])
     const [search, setSearch] = useState('')
     const [deptFilter, setDeptFilter] = useState('')
     const [typeFilter, setTypeFilter] = useState('')
@@ -285,49 +270,56 @@ export default function Students() {
         return () => window.removeEventListener('resize', handleResize)
     }, [])
 
-    useEffect(() => {
-        Promise.all([getStudents(), getDepartments()])
-            .then(([sRes, dRes]) => {
-                setStudents(Array.isArray(sRes.data) ? sRes.data : [])
-                setDepts(Array.isArray(dRes.data) ? dRes.data : [])
-            })
-            .catch(() => {
-                setStudents([])
-                setDepts([])
-            })
-            .finally(() => setLoading(false))
-    }, [])
+    async function loadAll() {
+        setLoading(true)
+        try {
+            const [sRes, dRes] = await Promise.all([
+                getStudents(),
+                getDepartments(),
+            ])
+            setStudents(Array.isArray(sRes.data) ? sRes.data : [])
+            setDepts(Array.isArray(dRes.data) ? dRes.data : [])
 
-    // ... (keep badge and formatDate functions)
+            const rawTypes = Array.isArray(sRes.data)
+                ? [...new Set(sRes.data.map(s => normalizeType(s.type || s.ppo_type_raw || s.ppo_type)).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+                : []
+            setTypes(rawTypes)
+        } catch {
+            setStudents([])
+            setDepts([])
+            setTypes([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        loadAll()
+    }, [])
 
     const filtered = useMemo(() => {
         let result = [...students]
+
         if (deptFilter) result = result.filter(s => s.department === deptFilter)
 
         if (typeFilter) {
-            result = result.filter(s => {
-                // We use the simplified 'ppo_type' (PPO, Intern, FTE) for the filter dropdown
-                // while keeping the display as raw data.
-                const type = (s.ppo_type || 'FTE').toUpperCase()
-                if (typeFilter === 'FTE') return type === 'FTE'
-                if (typeFilter === 'PPO') return type === 'PPO'
-                if (typeFilter === 'Intern') return type === 'INTERN'
-                return true
-            })
+            result = result.filter(s => normalizeType(s.type || s.ppo_type_raw || s.ppo_type) === typeFilter)
         }
 
-        if (search) {
+        if (search.trim()) {
             const q = search.toLowerCase()
             result = result.filter(s =>
-                s.name?.toLowerCase().includes(q) ||
-                s.company?.toLowerCase().includes(q) ||
-                s.role?.toLowerCase().includes(q)
+                String(s.name || '').toLowerCase().includes(q) ||
+                String(s.company || '').toLowerCase().includes(q) ||
+                String(s.role || '').toLowerCase().includes(q) ||
+                String(s.roll_no || '').toLowerCase().includes(q) ||
+                String(s.department || '').toLowerCase().includes(q) ||
+                String(s.type || s.ppo_type_raw || s.ppo_type || '').toLowerCase().includes(q)
             )
         }
+
         return result
     }, [search, deptFilter, typeFilter, students])
-
-
 
     const inputStyle = {
         padding: '8px 14px',
@@ -372,9 +364,9 @@ export default function Students() {
                     style={{ ...inputStyle, color: '#94a3b8', cursor: 'pointer' }}
                 >
                     <option value="">All Types</option>
-                    <option value="FTE">FTE</option>
-                    <option value="PPO">PPO</option>
-                    <option value="Intern">Intern</option>
+                    {types.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                    ))}
                 </select>
             </div>
 
@@ -397,38 +389,40 @@ export default function Students() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.map((s, i) => (
-                                <tr key={s.id ?? i} style={{
-                                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                    backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'
-                                }}>
-                                    <td style={{ padding: '10px 14px', color: '#475569' }}>{i + 1}</td>
-                                    <td style={{ padding: '10px 14px', color: 'white', fontWeight: 500, whiteSpace: 'nowrap' }}>{s.name}</td>
-                                    <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.roll_no || '—'}</td>
-                                    <td style={{ padding: '10px 14px' }}>{badge(s.department, '#818cf8')}</td>
-                                    <td style={{ padding: '10px 14px', color: '#e2e8f0', fontWeight: 500, whiteSpace: 'nowrap' }}>{s.company || '—'}</td>
-                                    <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.role || '—'}</td>
-                                    <td style={{ padding: '10px 14px' }}>
-                                        {/* Always show the raw data from the Excel cell */}
-                                        {badge(s.ppo_type_raw || s.ppo_type || 'FTE', ppoColor(s.ppo_type_raw || s.ppo_type))}
-                                    </td>
-                                    <td style={{
-                                        padding: '10px 14px',
-                                        color: s.ctc_lpa ? '#fbbf24' : (s.stipend_pm ? '#22d3ee' : '#94a3b8'),
-                                        fontVariantNumeric: 'tabular-nums',
-                                        fontWeight: 600,
-                                        whiteSpace: 'nowrap'
+                            {filtered.map((s, i) => {
+                                const rawType = normalizeType(s.type || s.ppo_type_raw || s.ppo_type)
+                                return (
+                                    <tr key={s.id ?? i} style={{
+                                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                        backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'
                                     }}>
-                                        {s.ctc_lpa
-                                            ? `${s.ctc_lpa} LPA`
-                                            : s.stipend_pm
-                                                ? `₹${Number(s.stipend_pm).toLocaleString('en-IN')}K /mo`
-                                                : '—'
-                                        }
-                                    </td>
-                                    <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
-                                </tr>
-                            ))}
+                                        <td style={{ padding: '10px 14px', color: '#475569' }}>{i + 1}</td>
+                                        <td style={{ padding: '10px 14px', color: 'white', fontWeight: 500, whiteSpace: 'nowrap' }}>{s.name || '—'}</td>
+                                        <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.roll_no || '—'}</td>
+                                        <td style={{ padding: '10px 14px' }}>{badge(s.department, '#818cf8')}</td>
+                                        <td style={{ padding: '10px 14px', color: '#e2e8f0', fontWeight: 500, whiteSpace: 'nowrap' }}>{s.company || '—'}</td>
+                                        <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{s.role || '—'}</td>
+                                        <td style={{ padding: '10px 14px' }}>
+                                            {badge(rawType || '—', typeColor(rawType))}
+                                        </td>
+                                        <td style={{
+                                            padding: '10px 14px',
+                                            color: s.ctc_lpa != null && s.ctc_lpa !== '' ? '#fbbf24' : (s.stipend_pm != null && s.stipend_pm !== '' ? '#22d3ee' : '#94a3b8'),
+                                            fontVariantNumeric: 'tabular-nums',
+                                            fontWeight: 600,
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                            {s.ctc_lpa != null && s.ctc_lpa !== ''
+                                                ? `${s.ctc_lpa} LPA`
+                                                : s.stipend_pm != null && s.stipend_pm !== ''
+                                                    ? `₹${Number(s.stipend_pm).toLocaleString('en-IN')} /mo`
+                                                    : '—'
+                                            }
+                                        </td>
+                                        <td style={{ padding: '10px 14px', color: '#64748b', whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
