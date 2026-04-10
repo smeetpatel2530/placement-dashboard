@@ -80,7 +80,6 @@ export default function Analytics() {
         [depts]
     )
 
-    // ── Fixed: uses fte_count / ppo_count / intern_count (no more fte_intern_count) ──
     const typePieData = useMemo(() => {
         const fte = depts.reduce((s, d) => s + (d.fte_count || 0), 0)
         const ppo = depts.reduce((s, d) => s + (d.ppo_count || 0), 0)
