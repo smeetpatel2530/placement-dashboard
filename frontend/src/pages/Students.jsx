@@ -220,7 +220,7 @@ export default function Students() {
                                             {s.ctc_lpa != null && s.ctc_lpa !== ''
                                                 ? `${s.ctc_lpa} LPA`
                                                 : s.stipend_pm != null && s.stipend_pm !== ''
-                                                    ? `₹${Number(s.stipend_pm).toLocaleString('en-IN')} /mo`
+                                                    ? `₹${Number(s.stipend_pm).toLocaleString('en-IN')} K /mo`
                                                     : '—'
                                             }
                                         </td>
